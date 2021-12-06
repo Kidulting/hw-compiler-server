@@ -2,7 +2,7 @@ import config
 from flask import Flask
 from flask_restful import Resource, reqparse
 from flaskext.mysql import MySQL
-
+from datetime import datetime
 
 class Login(Resource):
     def post(self):
@@ -21,11 +21,11 @@ class Login(Resource):
             args = parser.parse_args()
 
             _student_id = args['student_id']
-
+            current_date = datetime.now()
             conn = mysql.connect()
             cursor = conn.cursor()
-            sql = "insert into login(student_id, last_log_in, simple_log_in) values(%s,%s,%s)"
-            cursor.execute(sql,(_student_id, "2021-09-01 13:23:00", 1))
+            sql = "insert into login(student_id, last_log_in) values(%s, %s) on duplicate key update last_log_in=%s"
+            cursor.execute(sql,(_student_id, current_date, current_date))
             data = cursor.fetchall()
 
             if len(data) is 0:
