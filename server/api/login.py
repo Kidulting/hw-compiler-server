@@ -1,4 +1,5 @@
 import config
+import hashlib
 from flask import Flask
 from flask_restful import Resource, reqparse
 from flaskext.mysql import MySQL
@@ -15,6 +16,7 @@ class Login(Resource):
         app.config['MYSQL_DATABASE_DB'] = config.db['MYSQL_DATABASE_DB']
         
         mysql.init_app(app)
+        
         try:
             parser = reqparse.RequestParser()
             parser.add_argument('student_id', type=str)
@@ -22,10 +24,18 @@ class Login(Resource):
 
             _student_id = args['student_id']
             current_date = datetime.now()
+
+            encoded = (_student_id+str(current_date)).encode('utf-8')
+            simple_log_in = hashlib.new('sha256')
+            simple_log_in.update(encoded)
+            simple_log_in = simple_log_in.hexdigest()
+
             conn = mysql.connect()
             cursor = conn.cursor()
-            sql = "insert into login(student_id, last_log_in) values(%s, %s) on duplicate key update last_log_in=%s"
-            cursor.execute(sql,(_student_id, current_date, current_date))
+
+
+            sql = "insert into login(student_id, last_log_in, simple_log_in) values(%s, %s, %s) on duplicate key update last_log_in=%s, simple_log_in=%s"
+            cursor.execute(sql,(_student_id, current_date, simple_log_in, current_date, simple_log_in))
             data = cursor.fetchall()
 
             if len(data) is 0:
